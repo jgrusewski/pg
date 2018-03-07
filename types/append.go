@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/gogo/protobuf/types"
 )
 
 func Append(b []byte, v interface{}, quote int) []byte {
@@ -43,6 +45,8 @@ func Append(b []byte, v interface{}, quote int) []byte {
 		return AppendString(b, v, quote)
 	case time.Time:
 		return AppendTime(b, v, quote)
+	case types.Timestamp:
+		return AppendGrpcTime(b, v, quote)
 	case []byte:
 		return AppendBytes(b, v, quote)
 	case ValueAppender:

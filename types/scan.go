@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/internal"
+	"github.com/gogo/protobuf/types"
 )
 
 func Scan(v interface{}, b []byte) error {
@@ -48,6 +49,18 @@ func Scan(v interface{}, b []byte) error {
 		}
 		var err error
 		*v, err = ParseTime(b)
+		return err
+	case *types.Timestamp:
+		if b == nil {
+			v = types.TimestampNow()
+			return nil
+		}
+		var err error
+		ts, err := ParseTime(b)
+		if err != nil {
+			return err
+		}
+		v, err = types.TimestampProto(ts)
 		return err
 	}
 
