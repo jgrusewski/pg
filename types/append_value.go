@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/internal"
+	"github.com/gogo/protobuf/types"
 )
 
 var driverValuerType = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
@@ -58,6 +59,8 @@ func appender(typ reflect.Type, pgArray bool) AppenderFunc {
 	switch typ {
 	case timeType:
 		return appendTimeValue
+	case grpcTimeType:
+		return appendGrpcTimeValue
 	case ipType:
 		return appendIPValue
 	case ipNetType:
@@ -161,6 +164,11 @@ func appendJSONValue(b []byte, v reflect.Value, quote int) []byte {
 func appendTimeValue(b []byte, v reflect.Value, quote int) []byte {
 	tm := v.Interface().(time.Time)
 	return AppendTime(b, tm, quote)
+}
+
+func appendGrpcTimeValue(b []byte, v reflect.Value, quote int) []byte {
+	tm := v.Interface().(types.Timestamp)
+	return AppendGrpcTime(b, tm, quote)
 }
 
 func appendIPValue(b []byte, v reflect.Value, quote int) []byte {
