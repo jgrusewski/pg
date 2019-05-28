@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/internal"
+	"github.com/gogo/protobuf/types"
 )
 
 var valueScannerType = reflect.TypeOf((*ValueScanner)(nil)).Elem()
 var sqlScannerType = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
 var timeType = reflect.TypeOf((*time.Time)(nil)).Elem()
+var grpcTimeType = reflect.TypeOf((*types.Timestamp)(nil)).Elem()
 var ipType = reflect.TypeOf((*net.IP)(nil)).Elem()
 var ipNetType = reflect.TypeOf((*net.IPNet)(nil)).Elem()
 var jsonRawMessageType = reflect.TypeOf((*json.RawMessage)(nil)).Elem()
@@ -63,6 +65,8 @@ func scanner(typ reflect.Type, pgArray bool) ScannerFunc {
 	switch typ {
 	case timeType:
 		return scanTimeValue
+	case grpcTimeType:
+		return scanGrpcTimeValue
 	case ipType:
 		return scanIPValue
 	case ipNetType:
@@ -262,7 +266,29 @@ func scanTimeValue(v reflect.Value, rd Reader, n int) error {
 	return nil
 }
 
-func scanIPValue(v reflect.Value, rd Reader, n int) error {
+var zeroGrpcTimeValue = reflect.ValueOf(types.Timestamp{})
+
+func scanGrpcTimeValue(v reflect.Value, b []byte) error {
+	if !v.CanSet() {
+		return fmt.Errorf("pg: Scan(nonsettable %s)", v.Type())
+	}
+	if b == nil {
+		v.Set(zeroGrpcTimeValue)
+		return nil
+	}
+	tm, err := ParseTime(b)
+	if err != nil {
+		return err
+	}
+	ts, err := types.TimestampProto(tm)
+	if err != nil {
+		return err
+	}
+	v.Set(reflect.ValueOf(*ts))
+	return nil
+}
+
+func scanIPValue(v reflect.Value, b []byte) error {
 	if !v.CanSet() {
 		return fmt.Errorf("pg: Scan(nonsettable %s)", v.Type())
 	}
